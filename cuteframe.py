@@ -38,13 +38,22 @@ sp.run("gpio -g mode 18 pwm && gpio pwmc 100", shell=True)
 # When was the frame media updated last
 when_updated_timestamp = datetime.datetime.now().replace(microsecond=0)
 
+# Who updated the frame media last
+last_updater = "system (frame was restarted)"
+
 # The name of the file being displayed at the moment
 file_being_displayed = 'out/default.mp4'
 
+# Which IDs can interact with the bot
+users_allowed = {1158879753: "Edd", 1203514639: "Austeja", 8653933996: "Valentine"}
 
 def record_when_updated() -> None:
     global when_updated_timestamp
     when_updated_timestamp = datetime.datetime.now().replace(microsecond=0)
+
+def record_who_updated(updater_name: str) -> None:
+    global last_updater
+    last_updater = updater_name
 
 def clear_tmp() -> None:
     files = glob.glob('tmp/*')
@@ -172,6 +181,7 @@ async def url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     post = Post.from_shortcode(insta.context, insta_shortcode)
     insta.download_post(post, 'tmp')
     update_display(resize_media(f'tmp/{insta_shortcode}.mp4', f'out/{insta_shortcode}.mp4'))
+    record_who_updated(users_allowed[update.effective_user.id])
 
 @respond_with_result
 async def sticker(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -180,16 +190,19 @@ async def sticker(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if tgs_mp4 is None:
         raise Exception("Failed to turn sticker to MP4")
     update_display(resize_media(tgs_mp4, f'out/{tgs_mp4.split("/")[-1]}'))
+    record_who_updated(users_allowed[update.effective_user.id])
 
 @respond_with_result
 async def gif(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     out_file_path = await download_media(update.message.animation, context)
     update_display(resize_media(out_file_path, f'out/{out_file_path.split("/")[-1]}'))
+    record_who_updated(users_allowed[update.effective_user.id])
 
 @respond_with_result
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     out_file_path = await download_media(update.message.photo[-1], context)
     update_display(resize_media(out_file_path, f'out/{out_file_path.split("/")[-1]}'))
+    record_who_updated(users_allowed[update.effective_user.id])
 
 
 async def catch_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -200,7 +213,7 @@ async def when_updated(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("Asked when was the last media update")
     date_diff = datetime.datetime.now() - when_updated_timestamp
     date_components = str(date_diff).split(':')
-    await update.message.reply_text(f"Time since last update: {date_components[0]} hours and {int(date_components[1])} minutes")
+    await update.message.reply_text(f"Time since last update: {date_components[0]} hours and {int(date_components[1])} minutes. Last updater: {last_updater}")
 
 async def whats_on(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print("Asked whats on the display")
@@ -272,7 +285,7 @@ async def reboot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     os.system("sudo reboot")
 
 async def restrict_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id in [1158879753, 1203514639]:
+    if update.effective_user.id in users_allowed:
         pass
     else:
         await update.effective_message.reply_text("Hey! You are not allowed to use me!")
