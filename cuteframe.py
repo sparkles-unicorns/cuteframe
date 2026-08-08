@@ -45,7 +45,7 @@ last_updater = "system (frame was restarted)"
 file_being_displayed = 'out/default.mp4'
 
 # Which IDs can interact with the bot
-users_allowed = {1158879753: "Edd", 1203514639: "Austeja", 8653933996: "Valentine"}
+users_allowed = {1158879753: "Edd", 1203514639: "Austeja", 8653933996: "Valentine", 8738475582: "Chloe"}
 
 def record_when_updated() -> None:
     global when_updated_timestamp
